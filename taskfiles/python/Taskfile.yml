@@ -1,0 +1,40 @@
+version: 3
+tasks:
+  build_dev_image:
+    desc: Builds or re-builds our dev image
+    label: 'build_dev_image-{{.PYTHON_DEV_IMAGE_NAME}}-{{.PYTHON_DEV_IMAGE_BASE}}'
+    vars:
+      PYTHON_DEV_DOCKERFILE: '{{.PYTHON_DEV_DOCKERFILE | default "Dockerfile"}}'
+    requires:
+      vars: ['PYTHON_DEV_IMAGE_NAME', 'PYTHON_DEV_IMAGE_BASE']
+    sources:
+      - '{{.PYTHON_DEV_DOCKERFILE}}'
+    cmds:
+      - 'podman build -t {{shellQuote .PYTHON_DEV_IMAGE_NAME}} -f {{shellQuote .PYTHON_DEV_DOCKERFILE}} --build-arg=PYTHON_IMAGE={{shellQuote .PYTHON_DEV_IMAGE_BASE}}'
+  run:
+    deps: [build_dev_image]
+    desc: Run an arbitrary command in the dev container
+    vars:
+      PYTHON_PODMAN_MOUNT_ARGS: '-v ./py:/py'
+    cmds:
+      # Give us an interactive shell, with all the mounts etc. set up
+      - 'podman run --rm -it {{.PYTHON_PODMAN_MOUNT_ARGS}} --userns keep-id --name  {{.PYTHON_DEV_CONTAINER_NAME}} --user py {{.PYTHON_PODMAN_EXTRA_ARGS}} {{.PYTHON_DEV_IMAGE_NAME}} {{.PYTHON_COMMAND | default .CLI_ARGS}}'
+
+  poetry:
+    cmds:
+      - task: run
+        vars:
+          PYTHON_COMMAND: 'poetry {{.CLI_ARGS}}'
+          PYTHON_PODMAN_EXTRA_ARGS: '{{.PYTHON_PODMAN_EXTRA_ARGS}}'
+
+  poetry_init:
+    status:
+      - test -f py/pyproject.toml
+      - test -f py/poetry.lock
+    cmds:
+      - task: poetry
+        vars:
+          CLI_ARGS: init
+
+
+

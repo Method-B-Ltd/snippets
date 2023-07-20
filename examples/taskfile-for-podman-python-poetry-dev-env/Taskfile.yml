@@ -1,0 +1,25 @@
+version: '3'
+includes:
+  py: ../../taskfiles/python/Taskfile.yml
+vars:
+  PYTHON_DEV_CONTAINER_NAME: "myexampleapp_python_dev"
+  PYTHON_DEV_IMAGE_NAME: "myexampleapp_python_dev"
+  PYTHON_DEV_DOCKERFILE: "../../dockerfiles/python-poetry-dev-env.Dockerfile"
+  PYTHON_DEV_IMAGE_BASE: "python:3.11-bookworm"
+
+
+tasks:
+  fastapi_install:
+    deps: ['py:poetry_init']
+    desc: Install FastAPI
+    cmds:
+      - task: py:poetry
+        vars:
+          CLI_ARGS: 'add fastapi uvicorn[standard]'
+  fastapi_dev:
+    desc: Starts the FastAPI dev server
+    cmds:
+      - task: py:poetry
+        vars:
+          PYTHON_PODMAN_EXTRA_ARGS: '-p 8000:8000 '
+          CLI_ARGS: 'run uvicorn example.main:app --reload --host 0.0.0.0'
