@@ -1,0 +1,6 @@
+version: '3'
+includes:
+  vue: ../../taskfiles/vue/Taskfile.yml
+vars:
+  VUE_CONTAINER_NAME: "myexampleapp_vue"
+  VUE_PROJECT_NAME: "myexampleapp"

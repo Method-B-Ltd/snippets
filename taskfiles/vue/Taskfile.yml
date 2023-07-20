@@ -1,0 +1,64 @@
+version: '3'
+vars:
+  # VUE_CONTAINER_NAME: e.g. myapp_vue
+  # VUE_PROJECT_NAME: e.g. myapp
+  VUE_DEV_PORT: '{{.VUE_DEV_PORT | default "5173"}}'
+  VUE_IMAGE: '{{.VUE_IMAGE | default "node:20"}}'
+  VUE_HOST_BIND_DIR: '{{.VUE_HOST_BIND_DIR | default "./vue"}}'
+  VUE_TARGET_BIND_DIR: '{{.VUE_TARGET_BIND_DIR | default "/vue"}}'
+  VUE_PROJECT_WORK_DIR: '{{.VUE_TARGET_BIND_DIR }}/{{.VUE_PROJECT_NAME}}'
+  VUE_HOST_PROJECT_DIR: '{{.VUE_HOST_BIND_DIR }}/{{.VUE_PROJECT_NAME}}'
+tasks:
+  podman_run:
+    desc: Run an arbitrary command in the vue container
+    requires:
+      vars: ['VUE_PROJECT_NAME', 'VUE_CONTAINER_NAME']
+    cmds:
+      # Give us an interactive shell, with all the mounts etc. set up
+      - 'podman run --rm -it -v {{.VUE_HOST_BIND_DIR}}:{{.VUE_TARGET_BIND_DIR}} -w {{.VUE_PROJECT_WORK_DIR}} --userns keep-id --name  {{.VUE_CONTAINER_NAME}} --user node {{.VUE_EXTRA_ARGS}} {{.VUE_IMAGE}} {{.VUE_COMMAND | default .CLI_ARGS}}'
+  dev:
+    desc: Starts the Vite dev server
+    summary: |
+      Starts the Vite dev server
+    cmds:
+      - task: podman_run
+        vars:
+          VUE_EXTRA_ARGS: '-p {{.VUE_DEV_PORT}}:{{.VUE_DEV_PORT}}'
+          VUE_COMMAND: 'npm run dev -- --host --port {{.VUE_DEV_PORT}} --strictPort'
+
+  build:
+    desc: Build your Vue app
+    cmds:
+      - task: podman_run
+        vars:
+          VUE_COMMAND: 'npm run build'
+
+  init:
+    desc: Initialise your Vue app
+    summary: | 
+        Initialise your Vue app
+        
+        This will use create-vue in the container and you'll have access to the files locally via the bind mount.
+        This runs npm init vue@latest and then npm install. Make sure you've set VUE_PROJECT_NAME.
+    cmds:
+      - task: podman_run
+        vars:
+          VUE_PROJECT_WORK_DIR: /vue/
+          VUE_COMMAND: 'npm init vue@latest -- {{.VUE_PROJECT_NAME}}'
+      - task: podman_run
+        vars:
+          VUE_COMMAND: 'npm install'
+    status:
+      - 'test -f {{.VUE_HOST_PROJECT_DIR}}/package.json'
+      - 'test -d {{.VUE_HOST_PROJECT_DIR}}/node_modules'
+
+  npm:
+    desc: Run an npm command
+    summary: |
+      Run an npm command
+      
+      This npm command runs inside the container. e.g. npm install, you'd do: task npm -- install
+    cmds:
+      - task: podman_run
+        vars:
+          VUE_COMMAND: 'npm {{.CLI_ARGS}}'
