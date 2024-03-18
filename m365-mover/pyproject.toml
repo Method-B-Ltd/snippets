@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "m365-mover"
+version = "0.1.0"
+description = ""
+authors = ["Michael Mulqueen <mike@method-b.uk>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+exchangelib = "5.0.3"
+msal = "^1.27.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
