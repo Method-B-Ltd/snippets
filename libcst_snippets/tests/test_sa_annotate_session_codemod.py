@@ -2,7 +2,7 @@ import libcst as cst
 import libcst.matchers as m
 from libcst.codemod import CodemodTest
 
-from .sa_annotate_session_codemod import class_has_tablename_attribute_matcher, column_definition_line_matcher, \
+from codemods.sa_annotate_session_codemod import class_has_tablename_attribute_matcher, column_definition_line_matcher, \
     class_has_column_definitions_matcher, AddSessionTypeAnnotationCommand, \
     build_classmethod_with_session_arg_matcher
 

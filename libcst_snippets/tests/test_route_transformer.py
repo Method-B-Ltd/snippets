@@ -4,18 +4,18 @@ import libcst as cst
 import libcst.matchers as m
 import pytest
 import os.path
-from .route_transformer import RouteTransformer, eligible_view_function_matcher, require_call_stmt_matcher, require_call_matcher, \
+from codemods.route_transformer import RouteTransformer, eligible_view_function_matcher, require_call_stmt_matcher, require_call_matcher, \
     require_call_expr_matcher, view_with_permission_decorator_matcher, func_with_single_require_call_matcher, \
     simple_view_function_matcher
 
 
-def neighbouring_file(filename):
-    return os.path.join(os.path.dirname(__file__), filename)
+def project_file(filename):
+    return os.path.join(os.path.dirname(__file__), "..", filename)
 
 
 @pytest.fixture
 def route_example_cst() -> cst.Module:
-    with open(neighbouring_file("route_example_before.py"), "r") as file:
+    with open(project_file("fixup_examples/route_example_before.py"), "r") as file:
         return cst.parse_module(file.read())
 
 
@@ -230,6 +230,6 @@ def buy():
 
 def test_transform_whole_example(route_example_cst: cst.Module):
     transformed_tree = route_example_cst.visit(RouteTransformer())
-    with open(neighbouring_file("route_example_after.py"), "r") as file:
+    with open(project_file("fixed_examples/route_example_after.py"), "r") as file:
         expected_code = file.read()
     assert transformed_tree.code == expected_code
