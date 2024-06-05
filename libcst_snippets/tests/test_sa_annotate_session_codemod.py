@@ -3,12 +3,16 @@ import libcst.matchers as m
 from libcst.codemod import CodemodTest
 
 from codemods.sa_annotate_session_codemod import (
-    class_has_tablename_attribute_matcher,
-    column_definition_line_matcher,
-    class_has_column_definitions_matcher,
     AddSessionTypeAnnotationCommand,
     build_classmethod_with_session_arg_matcher,
 )
+
+from codemods.sa_common import (
+    class_has_tablename_attribute_matcher,
+    column_definition_line_matcher,
+    class_has_column_definitions_matcher,
+)
+
 
 
 def test_class_has_tablename_attribute_found():
