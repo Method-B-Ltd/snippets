@@ -15,7 +15,11 @@ def match_call_with_kwarg(keyword_name: str):
     :return: A matcher
     """
     return m.Call(
-        args=[m.AtLeastN(n=0), m.AtLeastN(n=1, matcher=m.Arg(keyword=m.Name(value=keyword_name))), m.AtLeastN(n=0)]
+        args=[
+            m.AtLeastN(n=0),
+            m.AtLeastN(n=1, matcher=m.Arg(keyword=m.Name(value=keyword_name))),
+            m.AtLeastN(n=0),
+        ]
     )
 
 
@@ -25,44 +29,36 @@ def match_method_call_named(method_name: str):
     :param method_name: The name of the method
     :return: A matcher
     """
-    return m.Call(
-        func=m.Attribute(
-            attr=m.Name(value=method_name)
-        )
-    )
+    return m.Call(func=m.Attribute(attr=m.Name(value=method_name)))
 
 
 # A decorator like @x.route(...)
-route_decorator_matcher = m.Decorator(
-    decorator=match_method_call_named("route")
-)
+route_decorator_matcher = m.Decorator(decorator=match_method_call_named("route"))
 
 
 # A decorator like @x.route(..., permission=...)
 route_with_permission_decorator_matcher = m.Decorator(
-    decorator=match_method_call_named("route") & match_call_with_kwarg("permission"))
+    decorator=match_method_call_named("route") & match_call_with_kwarg("permission")
+)
 
 
 # Any function decorated at least once with @x.route
-simple_view_function_matcher = (
-    m.FunctionDef(decorators=
-                  [m.AtLeastN(n=1, matcher=route_decorator_matcher)]))
+simple_view_function_matcher = m.FunctionDef(
+    decorators=[m.AtLeastN(n=1, matcher=route_decorator_matcher)]
+)
 
 
 # Any function decorated at least once with @x.route(..., permission=...)
-view_with_permission_decorator_matcher = (
-    m.FunctionDef(decorators=
-                  [m.AtLeastN(n=1, matcher=route_with_permission_decorator_matcher)]))
+view_with_permission_decorator_matcher = m.FunctionDef(
+    decorators=[m.AtLeastN(n=1, matcher=route_with_permission_decorator_matcher)]
+)
 
 
 # A call to g.user.require(...)
 require_call_matcher = m.Call(
     func=m.Attribute(
-        value=m.Attribute(
-            value=m.Name(value="g"),
-            attr=m.Name(value="user")
-        ),
-        attr=m.Name(value="require")
+        value=m.Attribute(value=m.Name(value="g"), attr=m.Name(value="user")),
+        attr=m.Name(value="require"),
     )
 )
 
@@ -71,23 +67,31 @@ require_call_expr_matcher = m.Expr(value=require_call_matcher)
 
 
 # A statement that includes a call to g.user.require(...)
-require_call_stmt_matcher = m.SimpleStatementLine(body=[m.AtLeastN(n=1, matcher=require_call_expr_matcher)])
+require_call_stmt_matcher = m.SimpleStatementLine(
+    body=[m.AtLeastN(n=1, matcher=require_call_expr_matcher)]
+)
 
 
 # Function that contains a single require call (and possibly other statements)
-body_with_single_require_call_matcher = m.IndentedBlock(body=[
-    m.AtLeastN(n=0, matcher=~require_call_stmt_matcher),
-    require_call_stmt_matcher,
-    m.AtLeastN(n=0, matcher=~require_call_stmt_matcher)
-])
+body_with_single_require_call_matcher = m.IndentedBlock(
+    body=[
+        m.AtLeastN(n=0, matcher=~require_call_stmt_matcher),
+        require_call_stmt_matcher,
+        m.AtLeastN(n=0, matcher=~require_call_stmt_matcher),
+    ]
+)
 
-func_with_single_require_call_matcher = m.FunctionDef(body=body_with_single_require_call_matcher)
+func_with_single_require_call_matcher = m.FunctionDef(
+    body=body_with_single_require_call_matcher
+)
 
 
 # Any function decorated at least once with @x.route, but not with @x.route(...), containing a single require call
-eligible_view_function_matcher = (simple_view_function_matcher
-                                  & ~view_with_permission_decorator_matcher
-                                  & func_with_single_require_call_matcher)
+eligible_view_function_matcher = (
+    simple_view_function_matcher
+    & ~view_with_permission_decorator_matcher
+    & func_with_single_require_call_matcher
+)
 
 
 def build_kwarg_node(keyword: str, value: cst.BaseExpression):
@@ -97,23 +101,26 @@ def build_kwarg_node(keyword: str, value: cst.BaseExpression):
     :param value: Value of the kwarg (e.g. a Name, SimpleString etc.)
     :return: The Arg node
     """
-    return cst.Arg(value=value,
-                   keyword=cst.Name(keyword),
-                   equal=cst.AssignEqual(
-                       whitespace_before=cst.SimpleWhitespace(""),
-                       whitespace_after=cst.SimpleWhitespace("")
-                   ))
+    return cst.Arg(
+        value=value,
+        keyword=cst.Name(keyword),
+        equal=cst.AssignEqual(
+            whitespace_before=cst.SimpleWhitespace(""),
+            whitespace_after=cst.SimpleWhitespace(""),
+        ),
+    )
 
 
 class RouteRedecorateCommand(VisitorBasedCodemodCommand):
 
     DESCRIPTION = "Add permission kwarg to route decorators based on require calls in view functions"
 
-    def __init__(self,
-                 context: CodemodContext):
+    def __init__(self, context: CodemodContext):
         super().__init__(context)
         self.inside_eligible_view_function = None
-        self.permission: Optional[cst.BaseExpression] = None  # Likely a Name or SimpleString.
+        self.permission: Optional[cst.BaseExpression] = (
+            None  # Likely a Name or SimpleString.
+        )
 
     def get_require_stmts(self, view_node: cst.FunctionDef):
         # Find all require call statements in the view function
@@ -149,32 +156,35 @@ class RouteRedecorateCommand(VisitorBasedCodemodCommand):
             self.permission = self.get_permission(node)
         return True
 
-    def leave_FunctionDef(self,
-                          original_node: cst.FunctionDef,
-                          updated_node: cst.FunctionDef) -> LeaveRet[cst.FunctionDef]:
+    def leave_FunctionDef(
+        self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
+    ) -> LeaveRet[cst.FunctionDef]:
         if self.inside_eligible_view_function:
             self.inside_eligible_view_function = None
             self.permission = None
         return updated_node
 
-    def leave_Decorator(self,
-                        original_node: cst.Decorator,
-                        updated_node: cst.Decorator) -> Union[cst.Decorator, cst.RemovalSentinel]:
+    def leave_Decorator(
+        self, original_node: cst.Decorator, updated_node: cst.Decorator
+    ) -> Union[cst.Decorator, cst.RemovalSentinel]:
         if self.inside_eligible_view_function:
             # If this is a route decorator, add the permission kwarg
             if m.matches(updated_node, route_decorator_matcher):
                 inner: cst.Call = updated_node.decorator
-                new_inner = inner.with_changes(args=list(inner.args) +
-                                                    [build_kwarg_node("permission", self.permission)])
+                new_inner = inner.with_changes(
+                    args=list(inner.args)
+                    + [build_kwarg_node("permission", self.permission)]
+                )
                 return updated_node.with_changes(decorator=new_inner)
 
         return updated_node
 
-    def leave_SimpleStatementLine(self,
-                                  original_node: cst.SimpleStatementLine,
-                                  updated_node: cst.SimpleStatementLine) -> LeaveRet[cst.SimpleStatementLine]:
+    def leave_SimpleStatementLine(
+        self,
+        original_node: cst.SimpleStatementLine,
+        updated_node: cst.SimpleStatementLine,
+    ) -> LeaveRet[cst.SimpleStatementLine]:
         if self.inside_eligible_view_function:
             if m.matches(original_node, require_call_stmt_matcher):
                 return cst.RemoveFromParent()
         return updated_node
-

@@ -4,9 +4,16 @@ import libcst as cst
 import libcst.matchers as m
 import pytest
 import os.path
-from codemods.route_redecorator import RouteRedecorateCommand, eligible_view_function_matcher, require_call_stmt_matcher, require_call_matcher, \
-    require_call_expr_matcher, view_with_permission_decorator_matcher, func_with_single_require_call_matcher, \
-    simple_view_function_matcher
+from codemods.route_redecorator import (
+    RouteRedecorateCommand,
+    eligible_view_function_matcher,
+    require_call_stmt_matcher,
+    require_call_matcher,
+    require_call_expr_matcher,
+    view_with_permission_decorator_matcher,
+    func_with_single_require_call_matcher,
+    simple_view_function_matcher,
+)
 from libcst.codemod import CodemodTest
 
 
@@ -32,12 +39,15 @@ def get_views(tree) -> Sequence[cst.FunctionDef]:
 
 
 def get_require_stmts(view_funcdef) -> Sequence[cst.SimpleStatementLine]:
-    return [stmt for stmt in view_funcdef.body.body if m.matches(stmt, require_call_stmt_matcher)]
+    return [
+        stmt
+        for stmt in view_funcdef.body.body
+        if m.matches(stmt, require_call_stmt_matcher)
+    ]
 
 
 def test_find_view():
-    code = \
-"""
+    code = """
 ADMIN_PERMISSION = "admin"
 
 @admin.route("/users")
@@ -49,7 +59,6 @@ def users():
     views = get_views(tree)
     view = views[0]
     assert view.name.value == "users"
-
 
 
 def test_match_require_call():
@@ -71,8 +80,7 @@ def test_match_require_call_stmt():
 
 
 def test_finds_require_stmt_in_view():
-    code = \
-"""
+    code = """
 ADMIN_PERMISSION = "admin"
 
 @admin.route("/users")
@@ -85,9 +93,9 @@ def users():
     require_stmts = get_require_stmts(view)
     assert len(require_stmts) == 1
 
+
 def test_match_view_with_permissioned_route():
-    code = \
-"""
+    code = """
 @app.route("/buy", methods=["GET", "POST"], permission=BUY_PERMISSION)
 def buy():
     ...
@@ -98,8 +106,7 @@ def buy():
 
 
 def test_match_contains_single_require_call():
-    code = \
-"""
+    code = """
 @app.route("/buy", methods=["GET", "POST"])
 def buy():
     g.user.require(BUY_PERMISSION)
@@ -111,8 +118,7 @@ def buy():
 
 
 def test_match_contains_single_require_call_no_match_multiples():
-    code = \
-"""
+    code = """
 @app.route("/buy", methods=["GET", "POST"])
 def buy():
     g.user.require(BUY_PERMISSION)
@@ -128,8 +134,7 @@ class TestRouteRedecorateCommand(CodemodTest):
     TRANSFORM = RouteRedecorateCommand
 
     def test_transform_noop(self):
-        code = \
-"""
+        code = """
 
 @admin.route("/users")
 def users():
@@ -138,8 +143,7 @@ def users():
         self.assertCodemod(code, code)
 
     def test_transform_on_simple_case(self):
-        code = \
-"""
+        code = """
 ADMIN_PERMISSION = "admin"
 
 @admin.route("/users")
@@ -147,8 +151,7 @@ def users():
     g.user.require(ADMIN_PERMISSION)
     render_template("users.html")
 """
-        expected = \
-"""
+        expected = """
 ADMIN_PERMISSION = "admin"
 
 @admin.route("/users", permission=ADMIN_PERMISSION)
@@ -158,15 +161,13 @@ def users():
         self.assertCodemod(code, expected)
 
     def test_transform_on_simple_case_string(self):
-        code = \
-"""
+        code = """
 @admin.route("/users")
 def users():
     g.user.require("admin")
     render_template("users.html")
 """
-        expected = \
-"""
+        expected = """
 @admin.route("/users", permission="admin")
 def users():
     render_template("users.html")
@@ -174,8 +175,7 @@ def users():
         self.assertCodemod(code, expected)
 
     def test_transform_ignores_conditional_require(self):
-        code = \
-"""
+        code = """
 @app.route("/items/<item_id>")
 def item(item_id):
     item = get_item(item_id)
@@ -186,16 +186,14 @@ def item(item_id):
         self.assertCodemod(code, code)
 
     def test_transform_multiple_routes_on_view(self):
-        code = \
-"""
+        code = """
 @app.route("/buy", methods=["GET", "POST"], defaults={"offer": None})
 @app.route("/offers/<offer>/buy", methods=["GET", "POST"], defaults={"offer": None})
 def buy():
     g.user.require(BUY_PERMISSION)
     ...
 """
-        expected = \
-"""
+        expected = """
 @app.route("/buy", methods=["GET", "POST"], defaults={"offer": None}, permission=BUY_PERMISSION)
 @app.route("/offers/<offer>/buy", methods=["GET", "POST"], defaults={"offer": None}, permission=BUY_PERMISSION)
 def buy():
@@ -204,8 +202,7 @@ def buy():
         self.assertCodemod(code, expected)
 
     def test_transform_ignores_routes_with_permission_already_set(self):
-        code = \
-"""
+        code = """
 @app.route("/buy", methods=["GET", "POST"], permission=BUY_PERMISSION)
 def buy():
     g.user.require(ADDITIONAL_PERMISSION)

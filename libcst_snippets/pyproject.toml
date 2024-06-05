@@ -21,3 +21,10 @@ testpaths = [
     "tests"
 ]
 pythonpath = ["."]
+
+[tool.black]
+extend-exclude = """(
+    ^/fixed_examples/.*
+    | ^/fixup_examples/.*
+    | ^/dumped_cst_examples/.*
+ )"""

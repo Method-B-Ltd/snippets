@@ -2,9 +2,13 @@ import libcst as cst
 import libcst.matchers as m
 from libcst.codemod import CodemodTest
 
-from codemods.sa_annotate_session_codemod import class_has_tablename_attribute_matcher, column_definition_line_matcher, \
-    class_has_column_definitions_matcher, AddSessionTypeAnnotationCommand, \
-    build_classmethod_with_session_arg_matcher
+from codemods.sa_annotate_session_codemod import (
+    class_has_tablename_attribute_matcher,
+    column_definition_line_matcher,
+    class_has_column_definitions_matcher,
+    AddSessionTypeAnnotationCommand,
+    build_classmethod_with_session_arg_matcher,
+)
 
 
 def test_class_has_tablename_attribute_found():
@@ -68,7 +72,10 @@ def get_active(cls, session, **kwargs):
     return session.query(cls).filter(cls.archived.is_(False)).all()
     """
     tree = cst.parse_module(code)
-    found = m.findall(tree, build_classmethod_with_session_arg_matcher(possible_session_names=("session",)))
+    found = m.findall(
+        tree,
+        build_classmethod_with_session_arg_matcher(possible_session_names=("session",)),
+    )
     assert len(found) == 1
 
 
