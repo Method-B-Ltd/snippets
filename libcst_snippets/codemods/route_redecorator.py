@@ -2,8 +2,7 @@ from typing import Union, Optional, TypeVar
 
 import libcst as cst
 import libcst.matchers as m
-
-
+from libcst.codemod import VisitorBasedCodemodCommand, CodemodContext
 
 T = TypeVar("T")
 LeaveRet = Union[T, cst.RemovalSentinel]
@@ -106,9 +105,13 @@ def build_kwarg_node(keyword: str, value: cst.BaseExpression):
                    ))
 
 
-class RouteTransformer(cst.CSTTransformer):
-    def __init__(self) -> None:
-        super().__init__()
+class RouteRedecorateCommand(VisitorBasedCodemodCommand):
+
+    DESCRIPTION = "Add permission kwarg to route decorators based on require calls in view functions"
+
+    def __init__(self,
+                 context: CodemodContext):
+        super().__init__(context)
         self.inside_eligible_view_function = None
         self.permission: Optional[cst.BaseExpression] = None  # Likely a Name or SimpleString.
 
