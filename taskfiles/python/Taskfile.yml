@@ -1,14 +1,17 @@
 version: 3
 tasks:
+  pull_base_image:
+    desc: Pull the base image for the dev container
+    requires:
+      vars: ['PYTHON_DEV_IMAGE_BASE']
+    cmds:
+      - 'podman pull {{shellQuote .PYTHON_DEV_IMAGE_BASE}}'
   build_dev_image:
     desc: Builds or re-builds our dev image
-    label: 'build_dev_image-{{.PYTHON_DEV_IMAGE_NAME}}-{{.PYTHON_DEV_IMAGE_BASE}}'
     vars:
       PYTHON_DEV_DOCKERFILE: '{{.PYTHON_DEV_DOCKERFILE | default "Dockerfile"}}'
     requires:
       vars: ['PYTHON_DEV_IMAGE_NAME', 'PYTHON_DEV_IMAGE_BASE']
-    sources:
-      - '{{.PYTHON_DEV_DOCKERFILE}}'
     cmds:
       - 'podman build -t {{shellQuote .PYTHON_DEV_IMAGE_NAME}} -f {{shellQuote .PYTHON_DEV_DOCKERFILE}} --build-arg=PYTHON_IMAGE={{shellQuote .PYTHON_DEV_IMAGE_BASE}}'
   run:
