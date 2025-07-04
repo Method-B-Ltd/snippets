@@ -1,0 +1,30 @@
+# Last Modified: Fri Jul  4 16:38:55 2025
+abi <abi/3.0>,
+
+include <tunables/global>
+
+/usr/sbin/tincd {
+  include <abstractions/base>
+  include <abstractions/bash>
+  include <abstractions/nameservice>
+
+  capability kill,
+  capability net_admin,
+  capability setgid,
+  capability setuid,
+  capability sys_chroot,
+
+  network netlink raw,
+
+  /etc/tinc/** r,
+  /etc/tinc/*/tinc-down mrix,
+  /etc/tinc/*/tinc-up mrix,
+  /run/tinc.*.pid w,
+  /usr/bin/ip mrix,
+  /usr/sbin/tincd mr,
+  /{usr/,}bin/{dash,bash} mrix,
+  owner /dev/net/tun rw,
+  owner /run/tinc.*.pid rwk,
+  owner /usr/bin/ip r,
+
+}
