@@ -1,0 +1,31 @@
+# Last Modified: Mon Jul  7 15:34:51 2025
+#include <tunables/global>
+
+/usr/sbin/tincd {
+  #include <abstractions/base>
+  #include <abstractions/bash>
+  #include <abstractions/nameservice>
+  #include <abstractions/openssl>
+
+  capability kill,
+  capability net_admin,
+  capability setgid,
+  capability setuid,
+  capability sys_chroot,
+
+  network netlink raw,
+
+  /etc/tinc/** r,
+  /etc/tinc/*/tinc-down mrix,
+  /etc/tinc/*/tinc-up mrix,
+  /run/tinc.*.pid w,
+  /{usr/,}bin/ip mrix,
+  /{usr/,}sbin/tincd mr,
+  /{usr/,}bin/{dash,bash} mrix,
+  owner /dev/net/tun rw,
+  owner /etc/tinc/*/rsa_key.priv rw,
+  owner /etc/tinc/*/rsa_key.pub rw,
+  owner /run/samba/winbindd/pipe rw,
+  owner /run/tinc.*.pid rwk,
+  owner /{usr/,}bin/ip r,
+}
